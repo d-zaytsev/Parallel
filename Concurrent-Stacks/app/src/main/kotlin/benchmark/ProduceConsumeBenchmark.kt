@@ -22,8 +22,7 @@ class ProduceConsumeBenchmark(private val stack: TreiberStack<Int>, private val 
 
         val threadArray = Array(threadCount) {
             thread(start = true) {
-                while (!run) {
-                }
+                while (!run) { }
 
                 while (run) {
                     stack.push(1)
@@ -34,13 +33,10 @@ class ProduceConsumeBenchmark(private val stack: TreiberStack<Int>, private val 
             }
         }
 
-        // Starting all threads
-        run = true
-
+        run = true // Starting all threads
         Thread.sleep(time)
-        // Wait for all threads to finish
         run = false
-        threadArray.forEach { it.join() }
+        threadArray.forEach { it.join() } // Wait for all threads to finish
 
         return operationsArray.sum()
 

@@ -18,6 +18,8 @@ private class Exchanger<T>(val value: T? = null, val state: ExchangerState = Exc
 
 /**
  * Lock-free elimination back-off stack.
+ * @param capacity Elimination array length
+ * @param maxAttempts Number of attempts to exchange values through an array
  */
 class EliminationStack<T>(capacity: Int, private val maxAttempts: Int) : TreiberStack<T>() {
 
