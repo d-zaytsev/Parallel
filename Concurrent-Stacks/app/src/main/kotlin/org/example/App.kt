@@ -20,14 +20,13 @@ fun main() {
     for (time in timeArray) {
         println("Time: $time")
         for (threadCount in threadCountArray) {
-            println("Threads: $threadCount")
             val bench = ProduceConsumeBenchmark(TreiberStack(), workload)
 
             val results = Array(repeats) {
                 bench.perform(time, threadCount)
             }
 
-            println("result: ${results.average().roundToInt()} ops")
+            println("threads: $threadCount | result: ${results.average().roundToInt()} ops")
         }
     }
 
@@ -36,14 +35,13 @@ fun main() {
     for (time in timeArray) {
         println("Time: $time")
         for (threadCount in threadCountArray) {
-            println("Threads: $threadCount")
-            val bench = ProduceConsumeBenchmark(EliminationStack(threadCount, 100), workload)
+            val bench = ProduceConsumeBenchmark(EliminationStack(threadCount, threadCount * 100), workload)
 
             val results = Array(repeats) {
                 bench.perform(time, threadCount)
             }
 
-            println("result: ${results.average().roundToInt()} ops")
+            println("threads: $threadCount | result: ${results.average().roundToInt()} ops")
         }
     }
 }
