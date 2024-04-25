@@ -1,4 +1,4 @@
-package org.example.trees
+package org.example.trees.interfaces
 
 /**
  * Tree node
