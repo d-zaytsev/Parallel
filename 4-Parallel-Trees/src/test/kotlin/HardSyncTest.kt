@@ -1,11 +1,7 @@
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.example.trees.HardSyncTree
-import org.jetbrains.kotlinx.lincheck.annotations.Operation
-import org.jetbrains.kotlinx.lincheck.annotations.StateRepresentation
-import org.jetbrains.kotlinx.lincheck.check
-import org.jetbrains.kotlinx.lincheck.strategy.managed.modelchecking.ModelCheckingOptions
+import org.example.trees.HardTree
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +12,7 @@ class HardSyncTest {
     fun `Parallel adding`() {
 
         val elementsCount = 1000
-        val tree = HardSyncTree<Int, String>()
+        val tree = HardTree<Int, String>()
 
         // Make a tree with (3 * elementsCount) size
         runBlocking {
@@ -50,7 +46,7 @@ class HardSyncTest {
     fun `Parallel tree nodes removing`() {
 
         val elementsCount = 1000
-        val tree = HardSyncTree<Int, String>()
+        val tree = HardTree<Int, String>()
 
         runBlocking {
             repeat(elementsCount * 3) {
@@ -93,7 +89,7 @@ class HardSyncTest {
     fun `Parallel tree nodes removing #2`() {
 
         val elementsCount = 1000
-        val tree = HardSyncTree<Int, Int>()
+        val tree = HardTree<Int, Int>()
 
         runBlocking {
             repeat(elementsCount * 3) {

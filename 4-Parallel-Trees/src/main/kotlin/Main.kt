@@ -1,12 +1,11 @@
 package org.example
 
 import kotlinx.coroutines.runBlocking
-import org.example.trees.HardSyncTree
-import java.util.TreeMap
+import org.example.trees.HardTree
 
 fun main() {
     runBlocking {
-        val tree = HardSyncTree<Int, String>()
+        val tree = HardTree<Int, String>()
 
         tree.add(5, "root")
 

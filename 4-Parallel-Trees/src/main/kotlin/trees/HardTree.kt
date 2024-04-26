@@ -1,9 +1,9 @@
 package org.example.trees
 
 import kotlinx.coroutines.sync.Mutex
-import org.example.nodes.HardSyncNode
+import org.example.nodes.HardNode
 
-class HardSyncTree<K : Comparable<K>, V> : AbstractTree<K, V>() {
+class HardTree<K : Comparable<K>, V> : AbstractTree<K, V>() {
     private val globalMutex = Mutex()
 
     override suspend fun search(key: K): V? {
@@ -18,7 +18,7 @@ class HardSyncTree<K : Comparable<K>, V> : AbstractTree<K, V>() {
         if (root != null)
             root?.add(key, value)
         else
-            root = HardSyncNode(key, value)
+            root = HardNode(key, value)
         globalMutex.unlock()
     }
 

@@ -1,18 +1,18 @@
 package org.example.nodes
 
-class HardSyncNode<K : Comparable<K>, V>(
+class HardNode<K : Comparable<K>, V>(
     key: K,
     value: V,
-    left: HardSyncNode<K, V>? = null,
-    right: HardSyncNode<K, V>? = null
+    left: HardNode<K, V>? = null,
+    right: HardNode<K, V>? = null
 ) : AbstractNode<K, V>(key, value, left, right) {
 
     override fun add(key: K, value: V) {
         if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
         else if (this.key < key)
-            if (right == null) right = HardSyncNode(key, value) else right?.add(key, value)
+            if (right == null) right = HardNode(key, value) else right?.add(key, value)
         else
-            if (left == null) left = HardSyncNode(key, value) else left?.add(key, value)
+            if (left == null) left = HardNode(key, value) else left?.add(key, value)
     }
 
     override fun search(key: K): V? {
