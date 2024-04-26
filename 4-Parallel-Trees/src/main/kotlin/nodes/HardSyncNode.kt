@@ -8,7 +8,7 @@ class HardSyncNode<K : Comparable<K>, V>(
 ) : AbstractNode<K, V>(key, value, left, right) {
 
     override fun add(key: K, value: V) {
-        if (this.key == key) throw IllegalArgumentException("Node with such key already exists")
+        if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
         else if (this.key < key)
             if (right == null) right = HardSyncNode(key, value) else right?.add(key, value)
         else
