@@ -3,7 +3,7 @@ package org.example.trees
 import kotlinx.coroutines.sync.Mutex
 import org.example.nodes.HardNode
 
-class HardTree<K : Comparable<K>, V> : AbstractTree<K, V>() {
+class HardTree<K : Comparable<K>, V> : AbstractTree<K, V, HardNode<K, V>>() {
     private val globalMutex = Mutex()
 
     override suspend fun search(key: K): V? {
