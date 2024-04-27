@@ -14,124 +14,103 @@ import kotlin.test.assertEquals
 abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<Int, String, N>>
     (
     private val treeFactory: () -> T,
-    private val nodesCount: Int = 100
+    private val nodesCount: Int = 1000
 ) {
 
+    /**
+     * Random time for delay
+     */
+    private fun time() = Random.nextLong(100)
+
+    private fun randomKeys(count: Int) = (0 until count).shuffled(Random).take(nodesCount)
+
+    /**
+     * Add some elements in parallel
+     */
     @Test
     fun `Parallel adding`() {
         val tree: T = treeFactory()
+        val nodeKeysToAdd = randomKeys(nodesCount)
 
-        // Make a tree with (3 * elementsCount) size
+        // Fill tree with elements
         runBlocking {
             repeat(nodesCount) {
                 launch {
-                    delay(Random.nextLong(100))
-                    tree.add(it, "test el")
-                }
-
-                launch {
-                    delay(Random.nextLong(100))
-                    tree.add(nodesCount + it, "test el")
-                }
-
-                launch {
-                    delay(Random.nextLong(100))
-                    tree.add(nodesCount * 2 + it, "test el")
+                    delay(time())
+                    tree.add(nodeKeysToAdd[it], "test")
                 }
             }
         }
 
         runBlocking {
-            for (i in 0 until nodesCount * 3) {
-                assertEquals(tree.search(i), "test el")
-            }
+            for (i in nodeKeysToAdd)
+                assertEquals(tree.search(i), "test")
         }
 
     }
 
+    /**
+     * Create tree and remove all nodes in parallel
+     */
     @Test
     fun `Parallel tree nodes removing`() {
         val tree = treeFactory()
+        val nodeKeys = randomKeys(nodesCount)
 
         runBlocking {
-            repeat(nodesCount * 3) {
-                tree.add(it, "el")
+            repeat(nodesCount) {
+                tree.add(nodeKeys[it], "test")
             }
         }
 
-        // Make a tree with (3 * elementsCount) size
+        // Remove all elements
         runBlocking {
             repeat(nodesCount) {
                 launch {
-                    delay(Random.nextLong(100))
-                    tree.remove(it)
-                }
-
-                launch {
-                    delay(Random.nextLong(100))
-                    tree.remove(nodesCount + it)
-                }
-
-                launch {
-                    delay(Random.nextLong(100))
-                    tree.remove(nodesCount * 2 + it)
+                    delay(time())
+                    tree.remove(nodeKeys[it])
                 }
             }
         }
 
         runBlocking {
-            for (i in 0 until nodesCount * 3)
+            for (i in nodeKeys)
                 assertEquals(tree.search(i), null)
-
         }
-
     }
 
-    /*
-    Remove all nodes except several random nodes
+    /**
+     * Create tree and remove some nodes (not all) in parallel
      */
     @Test
     fun `Parallel tree nodes removing #2`() {
         val tree = treeFactory()
+        val nodeKeys = randomKeys(nodesCount).toMutableList()
 
         runBlocking {
-            repeat(nodesCount * 3) {
-                tree.add(it, it.toString())
+            repeat(nodesCount) {
+                tree.add(nodeKeys[it], nodeKeys[it].toString())
             }
         }
 
-        // Elements in this range will not be removed
-        val notRemoveRange = Random.nextInt(nodesCount)..Random.nextInt(nodesCount + 1, nodesCount * 3)
+        // Elements in this list will not be removed
+        val notRemove = nodeKeys.shuffled(Random).take(nodesCount.div(10))
 
-        // Make a tree with (3 * elementsCount) size
+        // Remove some elements
         runBlocking {
             repeat(nodesCount) {
                 launch {
-                    delay(Random.nextLong(100))
-                    if (it !in notRemoveRange)
-                        tree.remove(it)
-
+                    delay(time())
+                    if (nodeKeys[it] !in notRemove)
+                        tree.remove(nodeKeys[it])
                 }
 
-                launch {
-                    delay(Random.nextLong(100))
-                    val id = nodesCount + it
-                    if (id !in notRemoveRange)
-                        tree.remove(id)
-                }
-
-                launch {
-                    delay(Random.nextLong(100))
-                    val id = nodesCount * 2 + it
-                    if (id !in notRemoveRange)
-                        tree.remove(id)
-                }
             }
         }
 
         runBlocking {
-            for (i in 0 until nodesCount * 3) {
-                if (i in notRemoveRange)
+            for (i in nodeKeys) {
+                if (i in notRemove)
                     assertEquals(tree.search(i), i.toString())
                 else
                     assertEquals(tree.search(i), null)
