@@ -1,9 +1,8 @@
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.example.nodes.AbstractNode
 import org.example.trees.AbstractTree
 import org.junit.jupiter.api.Test
+import kotlin.concurrent.thread
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
@@ -34,10 +33,11 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
 
         // Fill tree with elements
         runBlocking {
-            repeat(nodesCount) {
-                launch {
-                    delay(time())
-                    tree.add(nodeKeysToAdd[it], "test")
+            coroutineScope {
+                repeat(nodesCount) {
+                    launch(Dispatchers.Default) {
+                        tree.add(nodeKeysToAdd[it], "test")
+                    }
                 }
             }
         }
@@ -66,7 +66,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
         // Remove all elements
         runBlocking {
             repeat(nodesCount) {
-                launch {
+                launch(Dispatchers.Default) {
                     delay(time())
                     tree.remove(nodeKeys[it])
                 }
@@ -99,7 +99,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
         // Remove some elements
         runBlocking {
             repeat(nodesCount) {
-                launch {
+                launch(Dispatchers.Default) {
                     delay(time())
                     if (nodeKeys[it] !in notRemove)
                         tree.remove(nodeKeys[it])
