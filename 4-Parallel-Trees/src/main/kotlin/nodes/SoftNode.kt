@@ -7,7 +7,7 @@ class SoftNode<K : Comparable<K>, V>(
     value: V,
     left: SoftNode<K, V>? = null,
     right: SoftNode<K, V>? = null
-) : AbstractNode<K, V>(key, value, left, right) {
+) : AbstractNode<K, V, SoftNode<K, V>>(key, value, left, right) {
 
     private val mutex = Mutex()
 
@@ -20,23 +20,14 @@ class SoftNode<K : Comparable<K>, V>(
     }
 
     override suspend fun search(key: K): V? {
-        if (this.key == key) {
-            val right = (right as SoftNode<K, V>?)
-            val left = (left as SoftNode<K, V>?)
-
-            return this.value
-        } else if (this.key < key) {
-            right?.search(key)
-        } else {
-            left?.search(key)
-        }
+        TODO("123")
     }
 
-    override suspend fun remove(root: AbstractNode<K, V>, key: K): AbstractNode<K, V>? {
+    override suspend fun remove(root: SoftNode<K, V>, key: K): SoftNode<K, V>? {
         TODO("Not yet implemented")
     }
 
-    override fun min(): AbstractNode<K, V>? {
+    override fun min(): SoftNode<K, V>? {
         TODO("Not yet implemented")
     }
 

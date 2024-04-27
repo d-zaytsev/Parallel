@@ -3,16 +3,16 @@ package org.example.nodes
 /**
  * Tree node
  */
-abstract class AbstractNode<K : Comparable<K>, V>(
+abstract class AbstractNode<K : Comparable<K>, V, N : AbstractNode<K, V, N>>(
     var key: K,
     var value: V,
-    var left: AbstractNode<K, V>? = null,
-    var right: AbstractNode<K, V>? = null
+    var left: N? = null,
+    var right: N? = null
 ) {
     abstract suspend fun add(key: K, value: V)
     abstract suspend fun search(key: K): V?
-    abstract suspend fun remove(root: AbstractNode<K, V>, key: K): AbstractNode<K, V>?
-    abstract fun min(): AbstractNode<K, V>?
+    abstract suspend fun remove(root: N, key: K): N?
+    abstract fun min(): N?
 
     fun buildString(sb: StringBuilder, padding: String = "", pointer: String = "") {
         sb.append(padding)

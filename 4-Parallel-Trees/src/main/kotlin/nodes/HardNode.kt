@@ -5,7 +5,7 @@ class HardNode<K : Comparable<K>, V>(
     value: V,
     left: HardNode<K, V>? = null,
     right: HardNode<K, V>? = null
-) : AbstractNode<K, V>(key, value, left, right) {
+) : AbstractNode<K, V, HardNode<K, V>>(key, value, left, right) {
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
@@ -21,12 +21,12 @@ class HardNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
-    override fun min(): AbstractNode<K, V>? {
+    override fun min(): HardNode<K, V>? {
         return if (this.left == null) this
         else this.left?.min()
     }
 
-    override suspend fun remove(root: AbstractNode<K, V>, key: K): AbstractNode<K, V>? {
+    override suspend fun remove(root: HardNode<K, V>, key: K): HardNode<K, V>? {
         if (this.key == key) {
             if (left == null && right == null)
                 return null
