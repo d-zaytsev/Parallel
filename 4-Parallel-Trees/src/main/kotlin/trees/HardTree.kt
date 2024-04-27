@@ -24,7 +24,7 @@ class HardTree<K : Comparable<K>, V> : AbstractTree<K, V, HardNode<K, V>>() {
 
     override suspend fun remove(key: K) {
         globalMutex.lock()
-        root = root?.remove(root!!, key)
+        root = root?.remove(root ?: throw NullPointerException(), key)
         globalMutex.unlock()
     }
 

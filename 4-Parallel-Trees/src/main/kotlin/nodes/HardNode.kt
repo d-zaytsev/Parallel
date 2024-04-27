@@ -35,11 +35,11 @@ class HardNode<K : Comparable<K>, V>(
             else if (right == null)
                 return left
             else {
-                val minNode = min() ?: throw NullPointerException()
+                val minNode = right?.min() ?: throw NullPointerException()
 
                 this.key = minNode.key
                 this.value = minNode.value
-                this.left = left?.remove(left!!, minNode.key)
+                this.right = right?.remove(right ?: throw NullPointerException(), minNode.key)
                 return this
             }
 
@@ -47,10 +47,10 @@ class HardNode<K : Comparable<K>, V>(
             if (left == null && right == null)
                 throw IllegalArgumentException("Node with key $key doesn't exist")
 
-            if (key < this.key)
-                this.left = left?.remove(left!!, key)
+            if (this.key < key)
+                this.right = right?.remove(right ?: throw NullPointerException(), key)
             else
-                this.right = right?.remove(right!!, key)
+                this.left = left?.remove(left ?: throw NullPointerException(), key)
             return root
         }
 

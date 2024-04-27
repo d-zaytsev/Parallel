@@ -74,8 +74,8 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
         }
 
         runBlocking {
-            for (i in nodeKeys)
-                assertEquals(tree.search(i), null)
+            for (key in nodeKeys)
+                assertEquals(tree.search(key), null)
         }
     }
 
