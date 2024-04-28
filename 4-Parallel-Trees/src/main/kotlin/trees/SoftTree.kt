@@ -26,11 +26,13 @@ class SoftTree<K : Comparable<K>, V> : AbstractTree<K, V, SoftNode<K, V>>() {
     }
 
     override suspend fun remove(key: K) {
-        if (root == key)
-            rootMutex.withLock {
-                root = root?.remove(root ?: throw NullPointerException(), key)
-            }
-        else
+        if (root == key) {
+            rootMutex.lock()
             root = root?.remove(root ?: throw NullPointerException(), key)
+            rootMutex.unlock()
+        } else {
+            root?.mutex?.lock()
+            root = root?.remove(root ?: throw NullPointerException(), key)
+        }
     }
 }

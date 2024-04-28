@@ -61,8 +61,6 @@ class SoftNode<K : Comparable<K>, V>(
     }
 
     override suspend fun remove(subTree: SoftNode<K, V>, key: K): SoftNode<K, V>? {
-        mutex.lock()
-
         if (this.key == key) {
             if (left == null && right == null) {
                 mutex.unlock()
@@ -75,6 +73,7 @@ class SoftNode<K : Comparable<K>, V>(
                 return left
             } else {
 
+                right?.mutex?.lock()
                 val minNode = right?.min() ?: throw NullPointerException()
                 right = right?.remove(right ?: throw NullPointerException(), minNode.key)
 
@@ -93,13 +92,19 @@ class SoftNode<K : Comparable<K>, V>(
             }
 
             val childIsRemoving = key == right?.key || key == left?.key
-            if (!childIsRemoving)
-                mutex.unlock()
 
-            if (this.key < key)
+            if (this.key < key) {
+                right?.mutex?.lock()
+                if (!childIsRemoving)
+                    mutex.unlock()
                 right = right?.remove(right ?: throw NullPointerException(), key)
-            else
+            }
+            else {
+                left?.mutex?.lock()
+                if (!childIsRemoving)
+                    mutex.unlock()
                 left = left?.remove(left ?: throw NullPointerException(), key)
+            }
 
             if (childIsRemoving)
                 mutex.unlock()
