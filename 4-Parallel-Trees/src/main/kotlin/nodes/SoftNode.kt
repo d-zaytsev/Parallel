@@ -13,8 +13,6 @@ class SoftNode<K : Comparable<K>, V>(
     val mutex = Mutex()
 
     override suspend fun add(key: K, value: V) {
-        mutex.lock()
-
         if (this.key == key) {
 
             mutex.unlock()
@@ -26,6 +24,7 @@ class SoftNode<K : Comparable<K>, V>(
                 right = SoftNode(key, value)
                 mutex.unlock()
             } else {
+                right?.mutex?.lock()
                 mutex.unlock()
                 right?.add(key, value)
             }
@@ -36,6 +35,7 @@ class SoftNode<K : Comparable<K>, V>(
                 left = SoftNode(key, value)
                 mutex.unlock()
             } else {
+                left?.mutex?.lock()
                 mutex.unlock()
                 left?.add(key, value)
             }

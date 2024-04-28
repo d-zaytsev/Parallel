@@ -16,6 +16,7 @@ class SoftTree<K : Comparable<K>, V> : AbstractTree<K, V, SoftNode<K, V>>() {
         rootMutex.lock()
 
         if (root != null) {
+            root?.mutex?.lock()
             rootMutex.unlock()
             root?.add(key, value)
         } else {
