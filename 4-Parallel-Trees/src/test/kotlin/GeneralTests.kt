@@ -45,7 +45,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
 
         runBlocking {
             for (i in nodeKeysToAdd)
-                assertEquals(tree.search(i), "test")
+                assertEquals("test", tree.search(i))
         }
 
     }
@@ -76,7 +76,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
 
         runBlocking {
             for (key in nodeKeys)
-                assertEquals(tree.search(key), null)
+                assertEquals(null, tree.search(key))
         }
     }
 
@@ -112,9 +112,9 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
         runBlocking {
             for (i in nodeKeys) {
                 if (i in notRemove)
-                    assertEquals(tree.search(i), i.toString())
+                    assertEquals(i.toString(), tree.search(i))
                 else
-                    assertEquals(tree.search(i), null)
+                    assertEquals(null, tree.search(i))
 
             }
         }
