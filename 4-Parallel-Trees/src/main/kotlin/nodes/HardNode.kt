@@ -21,11 +21,6 @@ class HardNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
-    override fun min(): HardNode<K, V>? {
-        return if (this.left == null) this
-        else this.left?.min()
-    }
-
     override suspend fun remove(root: HardNode<K, V>, key: K): HardNode<K, V>? {
         if (this.key == key) {
             if (left == null && right == null)
