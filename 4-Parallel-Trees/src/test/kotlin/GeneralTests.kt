@@ -37,15 +37,16 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
                 repeat(nodesCount) {
                     launch(Dispatchers.Default) {
                         delay(time())
-                        tree.add(nodeKeysToAdd[it], "test")
+                        tree.add(nodeKeysToAdd[it], nodeKeysToAdd[it].toString())
                     }
                 }
             }
         }
 
         runBlocking {
-            for (i in nodeKeysToAdd)
-                assertEquals("test", tree.search(i))
+            for (i in nodeKeysToAdd) {
+                assertEquals(i.toString(), tree.search(i))
+            }
         }
 
     }

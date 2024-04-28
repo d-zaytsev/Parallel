@@ -1,6 +1,7 @@
 package org.example.nodes
 
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class SoftNode<K : Comparable<K>, V>(
     key: K,
@@ -11,16 +12,41 @@ class SoftNode<K : Comparable<K>, V>(
 
     private val mutex = Mutex()
 
-    suspend fun lock() = mutex.lock()
-
-    fun unlock() = mutex.unlock()
-
     override suspend fun add(key: K, value: V) {
-        TODO("Not yet implemented")
+        mutex.lock()
+
+        if (this.key == key) {
+
+            mutex.unlock()
+            throw IllegalArgumentException("Node with key $key already exists")
+
+        } else if (this.key < key) {
+
+            if (right == null) {
+                right = SoftNode(key, value)
+                mutex.unlock()
+            } else {
+                mutex.unlock()
+                right?.add(key, value)
+            }
+
+        } else {
+
+            if (left == null) {
+                left = SoftNode(key, value)
+                mutex.unlock()
+            } else {
+                mutex.unlock()
+                left?.add(key, value)
+            }
+
+        }
     }
 
     override suspend fun search(key: K): V? {
-        TODO("123")
+        return if (this.key == key) this.value
+        else if (this.key < key) right?.search(key)
+        else left?.search(key)
     }
 
     override suspend fun remove(root: SoftNode<K, V>, key: K): SoftNode<K, V>? {
