@@ -8,6 +8,7 @@ class SoftTree<K : Comparable<K>, V> : AbstractTree<K, V, SoftNode<K, V>>() {
     private val rootMutex = Mutex()
 
     override suspend fun search(key: K): V? {
+        root?.mutex?.lock()
         return root?.search(key)
     }
 

@@ -10,7 +10,7 @@ class SoftNode<K : Comparable<K>, V>(
     right: SoftNode<K, V>? = null
 ) : AbstractNode<K, V, SoftNode<K, V>>(key, value, left, right) {
 
-    private val mutex = Mutex()
+    val mutex = Mutex()
 
     override suspend fun add(key: K, value: V) {
         mutex.lock()
@@ -44,9 +44,20 @@ class SoftNode<K : Comparable<K>, V>(
     }
 
     override suspend fun search(key: K): V? {
-        return if (this.key == key) this.value
-        else if (this.key < key) right?.search(key)
-        else left?.search(key)
+        return if (this.key == key) {
+            mutex.unlock()
+            this.value
+        }
+        else if (this.key < key) {
+            right?.mutex?.lock()
+            mutex.unlock()
+            right?.search(key)
+        }
+        else {
+            left?.mutex?.lock()
+            mutex.unlock()
+            left?.search(key)
+        }
     }
 
     override suspend fun remove(subTree: SoftNode<K, V>, key: K): SoftNode<K, V>? {
