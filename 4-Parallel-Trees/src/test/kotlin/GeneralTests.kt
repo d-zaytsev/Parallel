@@ -36,6 +36,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
             coroutineScope {
                 repeat(nodesCount) {
                     launch(Dispatchers.Default) {
+                        delay(time())
                         tree.add(nodeKeysToAdd[it], "test")
                     }
                 }
