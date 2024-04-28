@@ -7,58 +7,48 @@ class OptimisticNode<K : Comparable<K>, V>(
     value: V,
     left: OptimisticNode<K, V>? = null,
     right: OptimisticNode<K, V>? = null,
-    private val validate: (Pair<OptimisticNode<K, V>, OptimisticNode<K, V>>) -> Boolean
+    private val validate: (OptimisticNode<K, V>) -> Boolean
 ) : AbstractNode<K, V, OptimisticNode<K, V>>(key, value, left, right) {
     val mutex = Mutex()
 
     override suspend fun add(key: K, value: V) {
-        TODO("Not yet implemented")
+        if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
+        else if (this.key < key)
+            if (right == null) {
+                mutex.lock()
+                if (validate(this)) {
+                    right = OptimisticNode(key, value, validate = validate)
+                    mutex.unlock()
+                } else {
+                    mutex.unlock()
+                    throw IllegalThreadStateException()
+                }
+            } else right?.add(key, value)
+        else
+            if (left == null) {
+                mutex.lock()
+                if (validate(this)) {
+                    left = OptimisticNode(key, value, validate = validate)
+                    mutex.unlock()
+                } else {
+                    mutex.unlock()
+                    throw IllegalThreadStateException()
+                }
+            } else left?.add(key, value)
     }
 
     override suspend fun search(key: K): V? {
-        if (this.key < key) {
-            if (right?.key == key) {
-
-                mutex.lock()
-                right?.mutex?.lock()
-
-                if (validate(Pair(this, right ?: throw NullPointerException()))) {
-                    right?.mutex?.unlock()
-                    mutex.unlock()
-
-                    return right?.value ?: throw NullPointerException()
-                } else {
-                    right?.mutex?.unlock()
-                    mutex.unlock()
-
-                    throw IllegalThreadStateException() // signal that tree is broken
-                }
+        return if (this.key == key) {
+            mutex.lock()
+            if (validate(this)) {
+                mutex.unlock()
+                this.value
             } else {
-                return right?.search(key) ?: throw IllegalThreadStateException()
+                mutex.unlock()
+                throw IllegalThreadStateException()
             }
-        } else if (this.key > key) {
-            if (left?.key == key) {
-
-                mutex.lock()
-                left?.mutex?.lock()
-
-                if (validate(Pair(this, left ?: throw NullPointerException()))) {
-                    left?.mutex?.unlock()
-                    mutex.unlock()
-
-                    return left?.value ?: throw NullPointerException()
-                } else {
-                    left?.mutex?.unlock()
-                    mutex.unlock()
-
-                    throw IllegalThreadStateException() // signal that tree is broken
-                }
-            } else {
-                return left?.search(key) ?: throw IllegalThreadStateException()
-            }
-        } else {
-            throw IllegalStateException()
-        }
+        } else if (this.key < key) right?.search(key)
+        else left?.search(key)
     }
 
     override suspend fun remove(subTree: OptimisticNode<K, V>, key: K): OptimisticNode<K, V>? {
