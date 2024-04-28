@@ -49,12 +49,53 @@ class SoftNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
-    override suspend fun remove(root: SoftNode<K, V>, key: K): SoftNode<K, V>? {
-        TODO("Not yet implemented")
-    }
+    override suspend fun remove(subTree: SoftNode<K, V>, key: K): SoftNode<K, V>? {
+        mutex.lock()
 
-    override fun min(): SoftNode<K, V>? {
-        TODO("Not yet implemented")
+        if (this.key == key) {
+            if (left == null && right == null) {
+                mutex.unlock()
+                return null
+            } else if (left == null) {
+                mutex.unlock()
+                return right
+            } else if (right == null) {
+                mutex.unlock()
+                return left
+            } else {
+
+                val minNode = right?.min() ?: throw NullPointerException()
+                right = right?.remove(right ?: throw NullPointerException(), minNode.key)
+
+                this.key = minNode.key
+                this.value = minNode.value
+
+                mutex.unlock()
+                return this
+
+            }
+
+        } else {
+            if (left == null && right == null) {
+                mutex.unlock()
+                throw IllegalArgumentException("Node with key $key doesn't exist")
+            }
+
+            val childIsRemoving = key == right?.key || key == left?.key
+            if (!childIsRemoving)
+                mutex.unlock()
+
+            if (this.key < key)
+                right = right?.remove(right ?: throw NullPointerException(), key)
+            else
+                left = left?.remove(left ?: throw NullPointerException(), key)
+
+            if (childIsRemoving)
+                mutex.unlock()
+
+            return subTree
+        }
+
     }
 
 }

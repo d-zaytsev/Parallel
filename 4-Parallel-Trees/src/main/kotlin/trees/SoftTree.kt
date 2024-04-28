@@ -1,7 +1,7 @@
 package org.example.trees
 
 import kotlinx.coroutines.sync.Mutex
-import org.example.nodes.HardNode
+import kotlinx.coroutines.sync.withLock
 import org.example.nodes.SoftNode
 
 class SoftTree<K : Comparable<K>, V> : AbstractTree<K, V, SoftNode<K, V>>() {
@@ -24,6 +24,11 @@ class SoftTree<K : Comparable<K>, V> : AbstractTree<K, V, SoftNode<K, V>>() {
     }
 
     override suspend fun remove(key: K) {
-        TODO("Not yet implemented")
+        if (root == key)
+            rootMutex.withLock {
+                root = root?.remove(root ?: throw NullPointerException(), key)
+            }
+        else
+            root = root?.remove(root ?: throw NullPointerException(), key)
     }
 }

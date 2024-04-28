@@ -11,13 +11,11 @@ abstract class AbstractNode<K : Comparable<K>, V, N : AbstractNode<K, V, N>>(
 ) {
     abstract suspend fun add(key: K, value: V)
     abstract suspend fun search(key: K): V?
-    abstract suspend fun remove(root: N, key: K): N?
+    abstract suspend fun remove(subTree: N, key: K): N?
 
     @Suppress("UNCHECKED_CAST")
-    fun min(): N? {
-        return if (this.left == null) (this as N)
-        else this.left?.min()
-    }
+    fun min(): N = this.left?.min() ?: (this as N)
+
 
     fun buildString(sb: StringBuilder, padding: String = "", pointer: String = "") {
         sb.append(padding)

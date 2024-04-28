@@ -21,7 +21,7 @@ class HardNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
-    override suspend fun remove(root: HardNode<K, V>, key: K): HardNode<K, V>? {
+    override suspend fun remove(subTree: HardNode<K, V>, key: K): HardNode<K, V>? {
         if (this.key == key) {
             if (left == null && right == null)
                 return null
@@ -46,7 +46,7 @@ class HardNode<K : Comparable<K>, V>(
                 this.right = right?.remove(right ?: throw NullPointerException(), key)
             else
                 this.left = left?.remove(left ?: throw NullPointerException(), key)
-            return root
+            return subTree
         }
 
     }
