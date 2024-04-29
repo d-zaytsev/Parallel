@@ -57,7 +57,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
     @Test
     fun `Parallel tree nodes removing`() {
         val tree = treeFactory()
-        val nodeKeys = randomKeys(nodesCount)
+        var nodeKeys = randomKeys(nodesCount)
 
         runBlocking {
             repeat(nodesCount) {
@@ -67,6 +67,8 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
 
         // Remove all elements
         runBlocking {
+            // to remove unevenly
+            nodeKeys = nodeKeys.shuffled(Random)
             repeat(nodesCount) {
                 launch(Dispatchers.Default) {
                     delay(time())
@@ -87,7 +89,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
     @Test
     fun `Parallel tree nodes removing #2`() {
         val tree = treeFactory()
-        val nodeKeys = randomKeys(nodesCount).toMutableList()
+        var nodeKeys = randomKeys(nodesCount)
 
         runBlocking {
             repeat(nodesCount) {
@@ -100,6 +102,8 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
 
         // Remove some elements
         runBlocking {
+            // to remove unevenly
+            nodeKeys = nodeKeys.shuffled(Random)
             repeat(nodesCount) {
                 launch(Dispatchers.Default) {
                     delay(time())
