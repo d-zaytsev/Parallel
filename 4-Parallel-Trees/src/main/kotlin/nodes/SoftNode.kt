@@ -1,7 +1,6 @@
 package org.example.nodes
 
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class SoftNode<K : Comparable<K>, V>(
     key: K,
@@ -64,27 +63,32 @@ class SoftNode<K : Comparable<K>, V>(
 
     override suspend fun remove(subTree: SoftNode<K, V>, key: K): SoftNode<K, V>? {
         if (this.key == key) {
-            if (left == null && right == null) {
+            return if (left == null && right == null) {
+                // Remove node without children
                 this.unlock()
-                return null
+                null
             } else if (left == null) {
+                // Remove node with right child
                 this.unlock()
-                return right
+                right
             } else if (right == null) {
+                // Remove node with left child
                 this.unlock()
-                return left
+                left
             } else {
-
+                // Remove nodes with both children
                 right?.lock()
+                // find min node from right subtree
                 val minNode = right?.min() ?: throw NullPointerException()
+                // remove min node from tree
                 right = right?.remove(right ?: throw NullPointerException(), minNode.key)
 
+                // change cur node key & value
                 this.key = minNode.key
                 this.value = minNode.value
 
                 this.unlock()
-                return this
-
+                this
             }
 
         } else {
@@ -93,22 +97,15 @@ class SoftNode<K : Comparable<K>, V>(
                 throw IllegalArgumentException("Node with key $key doesn't exist")
             }
 
-            val childIsRemoving = key == right?.key || key == left?.key
-
             if (this.key < key) {
                 right?.lock()
-                if (!childIsRemoving)
-                    this.unlock()
+                this.unlock()
                 right = right?.remove(right ?: throw NullPointerException(), key)
             } else {
                 left?.lock()
-                if (!childIsRemoving)
-                    this.unlock()
+                this.unlock()
                 left = left?.remove(left ?: throw NullPointerException(), key)
             }
-
-            if (childIsRemoving)
-                this.unlock()
 
             return subTree
         }
