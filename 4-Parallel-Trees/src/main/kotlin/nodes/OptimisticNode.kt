@@ -9,29 +9,32 @@ class OptimisticNode<K : Comparable<K>, V>(
     right: OptimisticNode<K, V>? = null,
     private val validate: (OptimisticNode<K, V>) -> Boolean
 ) : AbstractNode<K, V, OptimisticNode<K, V>>(key, value, left, right) {
-    val mutex = Mutex()
+    private val mutex = Mutex()
+
+    suspend fun lock() = mutex.lock()
+    fun unlock() = mutex.unlock()
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
         else if (this.key < key)
             if (right == null) {
-                mutex.lock()
+                this.lock()
                 if (validate(this)) {
                     right = OptimisticNode(key, value, validate = validate)
-                    mutex.unlock()
+                    this.unlock()
                 } else {
-                    mutex.unlock()
+                    this.unlock()
                     throw IllegalThreadStateException()
                 }
             } else right?.add(key, value)
         else
             if (left == null) {
-                mutex.lock()
+                this.lock()
                 if (validate(this)) {
                     left = OptimisticNode(key, value, validate = validate)
-                    mutex.unlock()
+                    this.unlock()
                 } else {
-                    mutex.unlock()
+                    this.unlock()
                     throw IllegalThreadStateException()
                 }
             } else left?.add(key, value)
@@ -39,12 +42,12 @@ class OptimisticNode<K : Comparable<K>, V>(
 
     override suspend fun search(key: K): V? {
         return if (this.key == key) {
-            mutex.lock()
+            this.lock()
             if (validate(this)) {
-                mutex.unlock()
+                this.unlock()
                 this.value
             } else {
-                mutex.unlock()
+                this.unlock()
                 throw IllegalThreadStateException()
             }
         } else if (this.key < key) right?.search(key)
