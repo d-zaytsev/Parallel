@@ -2,7 +2,7 @@ name: Trees CI
 on:
   push:
     branches:
-      - dev/task-4
+      - task-4
 
   pull-request:
     branches:
