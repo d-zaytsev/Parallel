@@ -15,13 +15,17 @@ jobs:
 
     steps:
     - name: Checkout project sources
+      working-directory: ./4-Parallel-Trees
       uses: actions/checkout@v4
 
     - name: Setup gradle
+      working-directory: ./4-Parallel-Trees
       uses: gradle/gradle-build-action@v2
 
     - name: Build
+      working-directory: ./4-Parallel-Trees
       run: ./gradlew build
 
     - name: Test
+      working-directory: ./4-Parallel-Trees
       run: ./gradlew test
