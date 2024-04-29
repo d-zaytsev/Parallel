@@ -13,27 +13,27 @@ class SoftNode<K : Comparable<K>, V>(
     private val mutex = Mutex()
 
     suspend fun lock() = mutex.lock()
-    fun unlock() = mutex.unlock()
+    private fun unlock() = mutex.unlock()
 
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) {
-
-            this.lock()
+            this.unlock()
             throw IllegalArgumentException("Node with key $key already exists")
-
         } else if (this.key < key) {
+            // move to the right subtree
 
             if (right == null) {
                 right = SoftNode(key, value)
                 this.unlock()
             } else {
                 right?.lock()
-                this.lock()
+                this.unlock()
                 right?.add(key, value)
             }
 
         } else {
+            // move to the left subtree
 
             if (left == null) {
                 left = SoftNode(key, value)
