@@ -57,4 +57,14 @@ class OptimisticNode<K : Comparable<K>, V>(
     override suspend fun remove(subTree: OptimisticNode<K, V>, key: K): OptimisticNode<K, V>? {
         TODO("Not yet implemented")
     }
+
+    override fun equals(other: Any?): Boolean {
+        return if (other is OptimisticNode<*, *>)
+            key == other.key && value == other.value && left == other.left && right == other.right
+        else false
+    }
+
+    override fun hashCode(): Int {
+        return javaClass.hashCode()
+    }
 }
