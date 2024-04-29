@@ -10,22 +10,26 @@ class SoftNode<K : Comparable<K>, V>(
     right: SoftNode<K, V>? = null
 ) : AbstractNode<K, V, SoftNode<K, V>>(key, value, left, right) {
 
-    val mutex = Mutex()
+    private val mutex = Mutex()
+
+    suspend fun lock() = mutex.lock()
+    fun unlock() = mutex.unlock()
+
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) {
 
-            mutex.unlock()
+            this.lock()
             throw IllegalArgumentException("Node with key $key already exists")
 
         } else if (this.key < key) {
 
             if (right == null) {
                 right = SoftNode(key, value)
-                mutex.unlock()
+                this.unlock()
             } else {
-                right?.mutex?.lock()
-                mutex.unlock()
+                right?.lock()
+                this.lock()
                 right?.add(key, value)
             }
 
@@ -33,10 +37,10 @@ class SoftNode<K : Comparable<K>, V>(
 
             if (left == null) {
                 left = SoftNode(key, value)
-                mutex.unlock()
+                this.unlock()
             } else {
-                left?.mutex?.lock()
-                mutex.unlock()
+                left?.lock()
+                this.unlock()
                 left?.add(key, value)
             }
 
@@ -45,17 +49,15 @@ class SoftNode<K : Comparable<K>, V>(
 
     override suspend fun search(key: K): V? {
         return if (this.key == key) {
-            mutex.unlock()
+            this.unlock()
             this.value
-        }
-        else if (this.key < key) {
-            right?.mutex?.lock()
-            mutex.unlock()
+        } else if (this.key < key) {
+            right?.lock()
+            this.unlock()
             right?.search(key)
-        }
-        else {
-            left?.mutex?.lock()
-            mutex.unlock()
+        } else {
+            left?.lock()
+            this.unlock()
             left?.search(key)
         }
     }
@@ -63,51 +65,50 @@ class SoftNode<K : Comparable<K>, V>(
     override suspend fun remove(subTree: SoftNode<K, V>, key: K): SoftNode<K, V>? {
         if (this.key == key) {
             if (left == null && right == null) {
-                mutex.unlock()
+                this.unlock()
                 return null
             } else if (left == null) {
-                mutex.unlock()
+                this.unlock()
                 return right
             } else if (right == null) {
-                mutex.unlock()
+                this.unlock()
                 return left
             } else {
 
-                right?.mutex?.lock()
+                right?.lock()
                 val minNode = right?.min() ?: throw NullPointerException()
                 right = right?.remove(right ?: throw NullPointerException(), minNode.key)
 
                 this.key = minNode.key
                 this.value = minNode.value
 
-                mutex.unlock()
+                this.unlock()
                 return this
 
             }
 
         } else {
             if (left == null && right == null) {
-                mutex.unlock()
+                this.unlock()
                 throw IllegalArgumentException("Node with key $key doesn't exist")
             }
 
             val childIsRemoving = key == right?.key || key == left?.key
 
             if (this.key < key) {
-                right?.mutex?.lock()
+                right?.lock()
                 if (!childIsRemoving)
-                    mutex.unlock()
+                    this.unlock()
                 right = right?.remove(right ?: throw NullPointerException(), key)
-            }
-            else {
-                left?.mutex?.lock()
+            } else {
+                left?.lock()
                 if (!childIsRemoving)
-                    mutex.unlock()
+                    this.unlock()
                 left = left?.remove(left ?: throw NullPointerException(), key)
             }
 
             if (childIsRemoving)
-                mutex.unlock()
+                this.unlock()
 
             return subTree
         }
