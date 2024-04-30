@@ -1,7 +1,6 @@
 package org.example.trees
 
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.example.nodes.OptimisticNode
 
 class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K, V>>() {
@@ -17,15 +16,13 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         var curNode = root ?: throw IllegalStateException("Root can't be null while validating")
 
         while (curNode != node) {
-            if (curNode == node) return true
-
-            curNode = if (node.key < curNode.key)
-                curNode.left ?: return false
-            else
+            curNode = if (curNode.key < node.key)
                 curNode.right ?: return false
+            else
+                curNode.left ?: return false
         }
 
-        return false
+        return true
     }
 
     override suspend fun search(key: K): V? {
@@ -34,11 +31,24 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
 
     override suspend fun add(key: K, value: V) {
         if (root == null) {
-            rootMutex.withLock {
+            // Add root
+            rootMutex.lock()
+            if (root == null) {
                 root = OptimisticNode(key, value) { node -> validate(node) }
+                rootMutex.unlock()
+            }
+            else {
+                rootMutex.unlock()
+                add(key, value)
             }
         } else {
-            root?.add(key, value) ?: this.add(key, value)
+            // Try to add node
+            try {
+                root?.add(key, value)
+            } catch (_: IllegalThreadStateException) {
+                // failed to add
+                add(key, value)
+            }
         }
     }
 

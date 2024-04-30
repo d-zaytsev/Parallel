@@ -11,33 +11,44 @@ class OptimisticNode<K : Comparable<K>, V>(
 ) : AbstractNode<K, V, OptimisticNode<K, V>>(key, value, left, right) {
     private val mutex = Mutex()
 
-    suspend fun lock() = mutex.lock()
-    fun unlock() = mutex.unlock()
+    private suspend fun lock() = mutex.lock()
+    private fun unlock() = mutex.unlock()
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
-        else if (this.key < key)
+        else if (this.key < key) {
+            // move to the right subtree
             if (right == null) {
-                this.lock()
-                if (validate(this)) {
+                // add right node
+                lock()
+                // check current node existence & null of right neighbour
+                if (validate(this) && right == null) {
+                    // current node still exists
                     right = OptimisticNode(key, value, validate = validate)
-                    this.unlock()
+                    unlock()
                 } else {
-                    this.unlock()
+                    // the node no longer exists, report an error
+                    unlock()
                     throw IllegalThreadStateException()
                 }
             } else right?.add(key, value)
-        else
+        } else {
+            // move to the left subtree
             if (left == null) {
-                this.lock()
-                if (validate(this)) {
+                // add left node
+                lock()
+                // check current node existence & null of left neighbour
+                if (validate(this) && left == null) {
+                    // current node still exists
                     left = OptimisticNode(key, value, validate = validate)
-                    this.unlock()
+                    unlock()
                 } else {
-                    this.unlock()
+                    // the node no longer exists, report an error
+                    unlock()
                     throw IllegalThreadStateException()
                 }
             } else left?.add(key, value)
+        }
     }
 
     override suspend fun search(key: K): V? {
@@ -59,8 +70,7 @@ class OptimisticNode<K : Comparable<K>, V>(
     }
 
     override fun equals(other: Any?): Boolean {
-        return if (other is OptimisticNode<*, *>)
-            key == other.key && value == other.value && left == other.left && right == other.right
+        return if (other is OptimisticNode<*, *>) key == other.key && value == other.value && left == other.left && right == other.right
         else false
     }
 
