@@ -2,7 +2,7 @@ import kotlinx.coroutines.*
 import org.example.nodes.AbstractNode
 import org.example.trees.AbstractTree
 import org.junit.jupiter.api.Test
-import kotlin.concurrent.thread
+import org.junit.jupiter.api.assertAll
 import kotlin.random.Random
 import kotlin.test.assertEquals
 
@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<Int, String, N>>
     (
     private val treeFactory: () -> T,
-    private val nodesCount: Int = 100
+    private val nodesCount: Int = 100000
 ) {
 
     /**
@@ -106,8 +106,6 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
             nodeKeys = nodeKeys.shuffled(Random)
             repeat(nodesCount) {
                 launch(Dispatchers.Default) {
-                    println("remove: ${nodeKeys[it]}")
-                    println(tree)
                     delay(time())
                     if (nodeKeys[it] !in notRemove)
                         tree.remove(nodeKeys[it])
@@ -126,6 +124,53 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
             }
         }
 
+    }
+
+    /**
+     * Create a simple tree and then delete and add nodes to it in parallel
+     */
+    @Test
+    fun `Parallel adding & removing`() {
+        val tree = treeFactory()
+        val keys = randomKeys(nodesCount)
+        // half of elements for start tree
+        val half = nodesCount.div(2)
+        val startNodes = keys.take(half)
+        // nodes to add in parallel
+        val newNodes = keys.takeLast(half)
+
+        // Create tree
+        runBlocking {
+            repeat(half) {
+                tree.add(startNodes[it], startNodes[it].toString())
+            }
+        }
+
+        runBlocking {
+            repeat(half) {
+                // Add elements
+                launch(Dispatchers.Default) {
+                    delay(time())
+                    tree.add(newNodes[it], "new node")
+                }
+                // Remove elements
+                launch(Dispatchers.Default) {
+                    delay(time())
+                    tree.remove(startNodes[it])
+                }
+            }
+        }
+
+        runBlocking {
+            // all start nodes was deleted
+            for (key in startNodes) {
+                assertEquals(null, tree.search(key))
+            }
+            // all new nodes was created
+            for (key in newNodes) {
+                assertEquals("new node", tree.search(key))
+            }
+        }
     }
 
 }
