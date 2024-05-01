@@ -58,47 +58,60 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
 
     override suspend fun remove(key: K) {
         if (root?.key == key) {
-            // remove root
-            rootMutex.lock()
-            if (root?.key == key) {
-                root = null
-                rootMutex.unlock()
-            } else {
-                rootMutex.unlock()
+            if (!tryRootRemove(key))
                 remove(key)
-            }
         } else {
-            try {
-                if (root?.right?.key == key) {
-                    rootMutex.lock()
-                    root?.right?.lock()
-                    if (root?.right?.key == key) {
-                        root = root?.remove(root ?: throw NullPointerException(), key)
-                        root?.right?.unlock()
-                        rootMutex.unlock()
-                    } else {
-                        root?.right?.unlock()
-                        rootMutex.unlock()
-                        remove(key)
-                    }
-                } else if (root?.left?.key == key) {
-                    rootMutex.lock()
-                    root?.left?.lock()
-                    if (root?.left?.key == key) {
-                        root = root?.remove(root ?: throw NullPointerException(), key)
-                        root?.left?.unlock()
-                        rootMutex.unlock()
-                    } else {
-                        root?.left?.unlock()
-                        rootMutex.unlock()
-                        remove(key)
-                    }
-                } else {
+            if (root?.right?.key == key) {
+                if (!tryChildRemove(root?.right, key))
+                    remove(key)
+            } else if (root?.left?.key == key) {
+                if (!tryChildRemove(root?.left, key))
+                    remove(key)
+            } else {
+                try {
                     root = root?.remove(root ?: throw NullPointerException(), key)
+                } catch (_: IllegalThreadStateException) {
+                    // if remove fail validating
+                    remove(key)
                 }
-            } catch (_: IllegalThreadStateException) {
-                remove(key)
             }
+        }
+    }
+
+    /**
+     * Try to remove root's child
+     * @return true - success, false - otherwise
+     */
+    private suspend fun tryChildRemove(child: OptimisticNode<K, V>?, key: K): Boolean {
+        rootMutex.lock()
+        child?.lock()
+        if (child?.key == key) {
+            root = root?.remove(root ?: throw NullPointerException(), key)
+            child.unlock()
+            rootMutex.unlock()
+            return true
+        } else {
+            child?.unlock()
+            rootMutex.unlock()
+            return false
+        }
+    }
+
+    /**
+     * Try to remove root node
+     * @return true - success, false - otherwise
+     */
+    private suspend fun tryRootRemove(key: K): Boolean {
+        rootMutex.lock()
+        if (root?.key == key) {
+            // root still exist
+            root = null
+            rootMutex.unlock()
+            return true
+        } else {
+            // root was deleted
+            rootMutex.unlock()
+            return false
         }
     }
 }
