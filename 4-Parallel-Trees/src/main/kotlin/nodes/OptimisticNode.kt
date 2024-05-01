@@ -67,57 +67,51 @@ class OptimisticNode<K : Comparable<K>, V>(
 
     override suspend fun remove(subTree: OptimisticNode<K, V>, key: K): OptimisticNode<K, V>? {
         return if (this.key == key) {
-            // remove current node
-            // * we already have lock on this node *
-            curNodeRemove()
+            if (left == null && right == null) {
+                // Remove node without children
+                unlock()
+                null
+            } else if (left == null) {
+                // Remove node with right child
+                unlock()
+                right
+            } else if (right == null) {
+                // Remove node with left child
+                unlock()
+                left
+            } else {
+                // find min node from right subtree
+                val minNode = right?.min() ?: throw NullPointerException()
+                // Remove nodes with both children
+                right?.lock()
+                // remove min node from tree
+                right = right?.remove(right ?: throw NullPointerException(), minNode.key)
+
+                // change cur node key & value
+                this.key = minNode.key
+                this.value = minNode.value
+
+                unlock()
+                this
+            }
+
         } else {
-            if (left == null && right == null)
-                throw IllegalArgumentException("Node with key $key doesn't exist")
+            if (left == null && right == null) {
+                unlock()
+                throw IllegalArgumentException("Node with key $key doesn't exist.")
+            }
 
             if (this.key < key) {
-                if (right?.key == key) {
-                    lock()
-                    removeChild(right, key).also { right = it }
-                    unlock()
-                } else right?.remove(right ?: throw NullPointerException(), key).also { right = it }
+                right?.lock()
+                unlock()
+                right = right?.remove(right ?: throw NullPointerException(), key)
             } else {
-                if (left?.key == key) {
-                    lock()
-                    removeChild(left, key).also { left = it; unlock() }
-                    unlock()
-                } else left?.remove(left ?: throw NullPointerException(), key).also { left = it }
+                left?.lock()
+                unlock()
+                left = left?.remove(left ?: throw NullPointerException(), key)
             }
+
             subTree
-        }
-    }
-
-    private suspend fun removeChild(node: OptimisticNode<K, V>?, key: K): OptimisticNode<K, V>? {
-        node?.lock()
-        if (validate(this) && node?.key == key) {
-            val res = node.remove(node, key)
-            return res
-        } else {
-            node?.unlock()
-            unlock()
-            throw IllegalThreadStateException()
-        }
-    }
-
-    private suspend fun curNodeRemove(): OptimisticNode<K, V>? {
-        if (left == null && right == null)
-            return null
-        else if (left == null)
-            return right
-        else if (right == null)
-            return left
-        else {
-            val minNode = right?.min() ?: throw NullPointerException()
-            right = right?.remove(right ?: throw NullPointerException(), minNode.key)
-
-            this.key = minNode.key
-            this.value = minNode.value
-
-            return this
         }
     }
 
