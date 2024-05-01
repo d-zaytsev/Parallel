@@ -13,7 +13,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
      * @return true if the node exists in the BST, false otherwise
      */
     private fun validate(node: OptimisticNode<K, V>): Boolean {
-        var curNode = root ?: throw IllegalStateException("Root can't be null while validating")
+        var curNode = root ?: return false
 
         while (curNode != node) {
             curNode = if (curNode.key < node.key)
@@ -86,7 +86,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         rootMutex.lock()
         child?.lock()
         if (child?.key == key) {
-            root = root?.remove(root ?: throw NullPointerException(), key)
+            root?.remove(root ?: throw NullPointerException(), key).also { root = it }
             child.unlock()
             rootMutex.unlock()
             return true
@@ -105,7 +105,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         rootMutex.lock()
         if (root?.key == key) {
             // root still exist
-            root = null
+            root?.remove(root ?: throw NullPointerException(), key).also { root = it }
             rootMutex.unlock()
             return true
         } else {
