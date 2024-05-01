@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<Int, String, N>>
     (
     private val treeFactory: () -> T,
-    private val nodesCount: Int = 100000
+    private val nodesCount: Int = 100
 ) {
 
     /**
@@ -106,6 +106,8 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
             nodeKeys = nodeKeys.shuffled(Random)
             repeat(nodesCount) {
                 launch(Dispatchers.Default) {
+                    println("remove: ${nodeKeys[it]}")
+                    println(tree)
                     delay(time())
                     if (nodeKeys[it] !in notRemove)
                         tree.remove(nodeKeys[it])

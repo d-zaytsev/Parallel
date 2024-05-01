@@ -57,6 +57,48 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
     }
 
     override suspend fun remove(key: K) {
-        TODO("Not yet implemented")
+        if (root?.key == key) {
+            // remove root
+            rootMutex.lock()
+            if (root?.key == key) {
+                root = null
+                rootMutex.unlock()
+            } else {
+                rootMutex.unlock()
+                remove(key)
+            }
+        } else {
+            try {
+                if (root?.right?.key == key) {
+                    rootMutex.lock()
+                    root?.right?.lock()
+                    if (root?.right?.key == key) {
+                        root = root?.remove(root ?: throw NullPointerException(), key)
+                        root?.right?.unlock()
+                        rootMutex.unlock()
+                    } else {
+                        root?.right?.unlock()
+                        rootMutex.unlock()
+                        remove(key)
+                    }
+                } else if (root?.left?.key == key) {
+                    rootMutex.lock()
+                    root?.left?.lock()
+                    if (root?.left?.key == key) {
+                        root = root?.remove(root ?: throw NullPointerException(), key)
+                        root?.left?.unlock()
+                        rootMutex.unlock()
+                    } else {
+                        root?.left?.unlock()
+                        rootMutex.unlock()
+                        remove(key)
+                    }
+                } else {
+                    root = root?.remove(root ?: throw NullPointerException(), key)
+                }
+            } catch (_: IllegalThreadStateException) {
+                remove(key)
+            }
+        }
     }
 }

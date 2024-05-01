@@ -11,8 +11,8 @@ class OptimisticNode<K : Comparable<K>, V>(
 ) : AbstractNode<K, V, OptimisticNode<K, V>>(key, value, left, right) {
     private val mutex = Mutex()
 
-    private suspend fun lock() = mutex.lock()
-    private fun unlock() = mutex.unlock()
+    suspend fun lock() = mutex.lock()
+    fun unlock() = mutex.unlock()
 
     override suspend fun add(key: K, value: V) {
         if (this.key == key) throw IllegalArgumentException("Node with key $key already exists")
@@ -66,7 +66,62 @@ class OptimisticNode<K : Comparable<K>, V>(
     }
 
     override suspend fun remove(subTree: OptimisticNode<K, V>, key: K): OptimisticNode<K, V>? {
-        TODO("Not yet implemented")
+        if (this.key == key) {
+            if (left == null && right == null)
+                return null
+            else if (left == null)
+                return right
+            else if (right == null)
+                return left
+            else {
+                val minNode = right?.min() ?: throw NullPointerException()
+
+                this.key = minNode.key
+                this.value = minNode.value
+                this.right = right?.remove(right ?: throw NullPointerException(), minNode.key)
+                return this
+            }
+
+        } else {
+            if (left == null && right == null)
+                throw IllegalArgumentException("Node with key $key doesn't exist")
+
+            if (this.key < key) {
+                // we are parent of removing node
+                if (right?.key == key) {
+                    lock()
+                    right?.lock()
+                    if (validate(this) && right?.key == key) {
+                        val newNode = right?.remove(right ?: throw NullPointerException(), key)
+                        right?.unlock()
+                        right = newNode
+                        unlock()
+                    } else {
+                        right?.unlock()
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
+                } else right = right?.remove(right ?: throw NullPointerException(), key)
+
+            } else {
+                if (left?.key == key) {
+                    lock()
+                    left?.lock()
+                    if (validate(this) && left?.key == key) {
+                        val newNode = left?.remove(left ?: throw NullPointerException(), key)
+                        left?.unlock()
+                        left = newNode
+                        unlock()
+                    } else {
+                        left?.unlock()
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
+                } else left = left?.remove(left ?: throw NullPointerException(), key)
+
+            }
+            return subTree
+        }
     }
 
     override fun equals(other: Any?): Boolean {
