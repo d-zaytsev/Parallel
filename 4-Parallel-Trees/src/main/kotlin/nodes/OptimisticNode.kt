@@ -66,7 +66,7 @@ class OptimisticNode<K : Comparable<K>, V>(
         while (childNode?.left != null) {
             parentNode = childNode
 
-            childNode.let { childNode = it.left ?: throw NullPointerException() }
+            childNode.let { childNode = it.left ?: throw IllegalThreadStateException() }
         }
 
         parentNode.lock(); childNode?.lock()
@@ -83,7 +83,7 @@ class OptimisticNode<K : Comparable<K>, V>(
 
             parentNode.unlock()
             return res
-        } else if (parentNode.left == childNode && childNode != null && validate(parentNode)) {
+        } else if (childNode != null && validate(parentNode) && parentNode.left == childNode && childNode?.left == null) {
 
             val res = Pair(childNode!!.key, childNode!!.value)
 

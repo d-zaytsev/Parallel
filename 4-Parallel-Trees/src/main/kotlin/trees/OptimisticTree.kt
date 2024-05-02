@@ -66,7 +66,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
                     remove(key)
                     return
                 } else
-                    throw IllegalArgumentException("Can' find node with key $key")
+                    throw IllegalArgumentException("Can't find node with key $key")
             } else
                 childNode = res
         }
