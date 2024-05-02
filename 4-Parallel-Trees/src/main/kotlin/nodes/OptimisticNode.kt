@@ -22,9 +22,13 @@ class OptimisticNode<K : Comparable<K>, V>(
                 // add right node
                 lock()
                 // check current node existence & null of right neighbour
-                if (validate(this) && right == null) {
+                if (right == null) {
                     // current node still exists
                     right = OptimisticNode(key, value, validate = validate)
+                    if (!validate(right)) {
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
                     unlock()
                 } else {
                     // the node no longer exists, report an error
@@ -38,9 +42,15 @@ class OptimisticNode<K : Comparable<K>, V>(
                 // add left node
                 lock()
                 // check current node existence & null of left neighbour
-                if (validate(this) && left == null) {
+                if (left == null) {
                     // current node still exists
                     left = OptimisticNode(key, value, validate = validate)
+
+                    if (!validate(left)) {
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
+
                     unlock()
                 } else {
                     // the node no longer exists, report an error

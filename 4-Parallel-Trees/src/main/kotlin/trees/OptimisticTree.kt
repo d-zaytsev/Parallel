@@ -62,7 +62,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
             val res = if (childNode.key < key) childNode.right else childNode.left
 
             if (res == null) {
-                if (search(key) != null) {
+                if (root != null) {
                     remove(key)
                     return
                 } else
