@@ -78,32 +78,30 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         if (parentNode == null) {
             // remove root node
 
-            rootMutex.lock()
-            root?.lock()
-            if (root?.key == key) {
+            childNode.lock()
+
+            if (root?.key == childNode.key) {
                 try {
-                    root?.also { val res = it.remove(it, key); it.unlock(); root = res }
-                    rootMutex.unlock()
+                    root?.also { root = it.remove(it, key) }
+                    childNode.unlock()
                 } catch (_: IllegalThreadStateException) {
                     // if fail validate
-                    root?.unlock()
-                    rootMutex.unlock()
+                    childNode.unlock()
                     remove(key)
                     return
                 }
             } else {
-                root?.unlock()
-                rootMutex.unlock()
+                childNode.unlock()
                 remove(key)
             }
 
         } else {
             // remove node in tree
 
-            parentNode.lock()
-            childNode.lock()
+            parentNode.lock(); childNode.lock()
+            val verify = validate(parentNode) && (parentNode.right == childNode || parentNode.left == childNode) && childNode.key == key
 
-            if (validate(parentNode) && (parentNode.right == childNode || parentNode.left == childNode) && childNode.key == key) {
+            if (verify) {
 
                 // identify the child and remove it
                 try {
@@ -111,20 +109,17 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
                         childNode.also { parentNode.right = it.remove(it, key) }
                     else
                         childNode.also { parentNode.left = it.remove(it, key) }
+
+                    childNode.unlock(); parentNode.unlock()
                 } catch (_: IllegalThreadStateException) {
                     // if fail validate
-                    childNode.unlock()
-                    parentNode.unlock()
+                    childNode.unlock(); parentNode.unlock()
                     remove(key)
                     return
                 }
-
-                childNode.unlock()
-                parentNode.unlock()
             } else {
                 // if node was changed
-                childNode.unlock()
-                parentNode.unlock()
+                childNode.unlock(); parentNode.unlock()
                 remove(key)
             }
         }
