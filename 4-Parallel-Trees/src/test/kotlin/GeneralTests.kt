@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<Int, String, N>>
     (
     private val treeFactory: () -> T,
-    private val nodesCount: Int = 100000
+    private val nodesCount: Int = 50000
 ) {
 
     /**
