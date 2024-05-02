@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<Int, String, N>>
     (
     private val treeFactory: () -> T,
-    private val nodesCount: Int = 50000
+    private val nodesCount: Int = 100000
 ) {
 
     /**
@@ -151,7 +151,7 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
                 // Add elements
                 launch(Dispatchers.Default) {
                     delay(time())
-                    tree.add(newNodes[it], "new node")
+                    tree.add(newNodes[it], newNodes[it].toString())
                 }
                 // Remove elements
                 launch(Dispatchers.Default) {
@@ -162,13 +162,13 @@ abstract class GeneralTests<N : AbstractNode<Int, String, N>, T : AbstractTree<I
         }
 
         runBlocking {
-            // all start nodes was deleted
-            for (key in startNodes) {
-                assertEquals(null, tree.search(key))
-            }
             // all new nodes was created
             for (key in newNodes) {
-                assertEquals("new node", tree.search(key))
+                assertEquals(key.toString(), tree.search(key), "(Node creating)")
+            }
+            // all start nodes was deleted
+            for (key in startNodes) {
+                assertEquals(null, tree.search(key), "(Node removing)")
             }
         }
     }

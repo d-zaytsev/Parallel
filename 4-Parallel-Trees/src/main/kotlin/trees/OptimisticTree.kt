@@ -26,25 +26,19 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         return true
     }
 
-    override suspend fun search(key: K): V? {
-        return try {
-            root?.search(key)
-        } catch (_: IllegalThreadStateException) {
-            search(key)
-        }
-    }
+    override suspend fun search(key: K): V? = root?.search(key)
 
     override suspend fun add(key: K, value: V) {
         if (root == null) {
             // Add root
             rootMutex.lock()
-            // validating null
+            // validating root
             if (root == null) {
                 root = OptimisticNode(key, value) { node -> validate(node) }
                 rootMutex.unlock()
             } else {
-                rootMutex.unlock()
                 add(key, value)
+                rootMutex.unlock()
             }
         } else {
             // Try to add node
@@ -86,7 +80,7 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
 
             if (root?.key == childNode.key) {
                 try {
-                    root?.also { root = it.remove(it, key) }
+                    childNode.also { root = it.remove(it, key) }
                     childNode.unlock()
                 } catch (_: IllegalThreadStateException) {
                     // if fail validate

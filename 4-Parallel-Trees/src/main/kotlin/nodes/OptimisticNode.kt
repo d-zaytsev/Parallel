@@ -53,14 +53,7 @@ class OptimisticNode<K : Comparable<K>, V>(
 
     override suspend fun search(key: K): V? {
         return if (this.key == key) {
-            this.lock()
-            if (validate(this)) {
-                this.unlock()
-                this.value
-            } else {
-                this.unlock()
-                throw IllegalThreadStateException()
-            }
+            value
         } else if (this.key < key) right?.search(key)
         else left?.search(key)
     }
@@ -78,7 +71,7 @@ class OptimisticNode<K : Comparable<K>, V>(
 
         parentNode.lock(); childNode?.lock()
 
-        if (childNode == null && validate(parentNode)) {
+        if (childNode == null && validate(parentNode) && parentNode.left == null) {
             // (start node).right == min node
 
             val res = Pair(parentNode.key, parentNode.value) // copy parent node
