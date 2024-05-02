@@ -65,7 +65,7 @@ class OptimisticNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
-    private suspend fun minSubstitution(node: OptimisticNode<K, V>): OptimisticNode<K, V> {
+    private suspend fun minSubstitution(node: OptimisticNode<K, V>): Pair<K, V> {
         var parentNode: OptimisticNode<K, V> = node.right ?: throw NullPointerException()
         var childNode: OptimisticNode<K, V>? = parentNode.left
 
@@ -76,14 +76,12 @@ class OptimisticNode<K : Comparable<K>, V>(
             childNode.let { childNode = it.left ?: throw NullPointerException() }
         }
 
-        parentNode.lock()
-        childNode?.lock()
+        parentNode.lock(); childNode?.lock()
 
         if (childNode == null && validate(parentNode)) {
             // (start node).right == min node
 
-            val res =
-                OptimisticNode(parentNode.key, parentNode.value, validate = { i -> validate(i) }) // copy parent node
+            val res = Pair(parentNode.key, parentNode.value) // copy parent node
 
             if (parentNode.right != null)
                 node.right = parentNode.right // smart substitute
@@ -92,8 +90,9 @@ class OptimisticNode<K : Comparable<K>, V>(
 
             parentNode.unlock()
             return res
-        } else if (parentNode.left == childNode && childNode != null && validate(childNode)) {
-            val res = OptimisticNode(childNode!!.key, childNode!!.value, validate = { i -> validate(i) })
+        } else if (parentNode.left == childNode && childNode != null && validate(parentNode)) {
+
+            val res = Pair(childNode!!.key, childNode!!.value)
 
             if (childNode!!.right != null) {
                 // substitute
@@ -102,12 +101,10 @@ class OptimisticNode<K : Comparable<K>, V>(
                 parentNode.left = null
             }
 
-            childNode!!.unlock()
-            parentNode.unlock()
+            childNode!!.unlock(); parentNode.unlock()
             return res
         } else {
-            childNode?.unlock()
-            parentNode.unlock()
+            childNode?.unlock(); parentNode.unlock()
             throw IllegalThreadStateException()
         }
     }
@@ -124,8 +121,8 @@ class OptimisticNode<K : Comparable<K>, V>(
                 // find min node
                 val minNode = minSubstitution(this)
 
-                this.key = minNode.key
-                this.value = minNode.value
+                this.key = minNode.first
+                this.value = minNode.second
                 this
             }
         } else {

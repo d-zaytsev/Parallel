@@ -65,12 +65,16 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         while (childNode.key != key) {
             parentNode = childNode
 
-            childNode = if (childNode.key < key)
-                childNode.right
-                    ?: throw IllegalStateException("Can't find node with key $key, currentNode: ${childNode.key}")
-            else
-                childNode.left
-                    ?: throw IllegalStateException("Can't find node with key $key, currentNode: ${childNode.key}")
+            val res = if (childNode.key < key) childNode.right else childNode.left
+
+            if (res == null) {
+                if (search(key) != null) {
+                    remove(key)
+                    return
+                } else
+                    throw IllegalArgumentException("Can' find node with key $key")
+            } else
+                childNode = res
         }
 
         // try to remove child node
@@ -99,7 +103,8 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
             // remove node in tree
 
             parentNode.lock(); childNode.lock()
-            val verify = validate(parentNode) && (parentNode.right == childNode || parentNode.left == childNode) && childNode.key == key
+            val verify =
+                validate(parentNode) && (parentNode.right == childNode || parentNode.left == childNode) && childNode.key == key
 
             if (verify) {
 
