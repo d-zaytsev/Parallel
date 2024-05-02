@@ -22,9 +22,14 @@ class OptimisticNode<K : Comparable<K>, V>(
                 // add right node
                 lock()
                 // check current node existence & null of right neighbour
-                if (validate(this) && right == null) {
+                if (right == null) {
                     // current node still exists
                     right = OptimisticNode(key, value, validate = validate)
+                    if (!validate(right)) {
+                        right = null
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
                     unlock()
                 } else {
                     // the node no longer exists, report an error
@@ -38,9 +43,16 @@ class OptimisticNode<K : Comparable<K>, V>(
                 // add left node
                 lock()
                 // check current node existence & null of left neighbour
-                if (validate(this) && left == null) {
+                if (left == null) {
                     // current node still exists
                     left = OptimisticNode(key, value, validate = validate)
+
+                    if (!validate(left)) {
+                        left = null
+                        unlock()
+                        throw IllegalThreadStateException()
+                    }
+
                     unlock()
                 } else {
                     // the node no longer exists, report an error
@@ -53,14 +65,7 @@ class OptimisticNode<K : Comparable<K>, V>(
 
     override suspend fun search(key: K): V? {
         return if (this.key == key) {
-            this.lock()
-            if (validate(this)) {
-                this.unlock()
-                this.value
-            } else {
-                this.unlock()
-                throw IllegalThreadStateException()
-            }
+            value
         } else if (this.key < key) right?.search(key)
         else left?.search(key)
     }
@@ -73,12 +78,12 @@ class OptimisticNode<K : Comparable<K>, V>(
         while (childNode?.left != null) {
             parentNode = childNode
 
-            childNode.let { childNode = it.left ?: throw NullPointerException() }
+            childNode.let { childNode = it.left ?: throw IllegalThreadStateException() }
         }
 
         parentNode.lock(); childNode?.lock()
 
-        if (childNode == null && validate(parentNode)) {
+        if (childNode == null && validate(parentNode) && parentNode.left == null) {
             // (start node).right == min node
 
             val res = Pair(parentNode.key, parentNode.value) // copy parent node
@@ -90,7 +95,7 @@ class OptimisticNode<K : Comparable<K>, V>(
 
             parentNode.unlock()
             return res
-        } else if (parentNode.left == childNode && childNode != null && validate(parentNode)) {
+        } else if (childNode != null && validate(parentNode) && parentNode.left == childNode && childNode?.left == null) {
 
             val res = Pair(childNode!!.key, childNode!!.value)
 
