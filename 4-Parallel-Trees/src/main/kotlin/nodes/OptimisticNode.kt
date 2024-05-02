@@ -26,6 +26,7 @@ class OptimisticNode<K : Comparable<K>, V>(
                     // current node still exists
                     right = OptimisticNode(key, value, validate = validate)
                     if (!validate(right)) {
+                        right = null
                         unlock()
                         throw IllegalThreadStateException()
                     }
@@ -47,6 +48,7 @@ class OptimisticNode<K : Comparable<K>, V>(
                     left = OptimisticNode(key, value, validate = validate)
 
                     if (!validate(left)) {
+                        left = null
                         unlock()
                         throw IllegalThreadStateException()
                     }
