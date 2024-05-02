@@ -12,8 +12,9 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
      * @param node the node we are going to
      * @return true if the node exists in the BST, false otherwise
      */
-    private fun validate(node: OptimisticNode<K, V>): Boolean {
+    private fun validate(node: OptimisticNode<K, V>?): Boolean {
         var curNode = root ?: return false
+        node ?: return false
 
         while (curNode != node) {
             curNode = if (curNode.key < node.key)
@@ -60,52 +61,68 @@ class OptimisticTree<K : Comparable<K>, V> : AbstractTree<K, V, OptimisticNode<K
         var childNode = root ?: throw IllegalStateException("Root is null")
         var parentNode: OptimisticNode<K, V>? = null
 
+        // find child node and parent node
         while (childNode.key != key) {
             parentNode = childNode
 
-            childNode = if (childNode.key < key) {
-                val right = childNode.right
-                if (right == null && search(key) != null)
-                    return remove(key)
-                else
-                    right ?: throw IllegalStateException("Can't find node with key $key")
-            }
-            else {
-                val left = childNode.left
-                if (left == null && search(key) != null)
-                    return remove(key)
-                else
-                    left ?: throw IllegalStateException("Can't find node with key $key")
-            }
+            childNode = if (childNode.key < key)
+                childNode.right
+                    ?: throw IllegalStateException("Can't find node with key $key, currentNode: ${childNode.key}")
+            else
+                childNode.left
+                    ?: throw IllegalStateException("Can't find node with key $key, currentNode: ${childNode.key}")
         }
 
-        if (parentNode == null) {
-            // removing root node
+        // try to remove child node
 
+        if (parentNode == null) {
+            // remove root node
+
+            rootMutex.lock()
             root?.lock()
-            if (validate(childNode) && childNode.key == key)
-                root?.also { root = it.remove(it, key) }
-            else
+            if (root?.key == key) {
+                try {
+                    root?.also { val res = it.remove(it, key); it.unlock(); root = res }
+                    rootMutex.unlock()
+                } catch (_: IllegalThreadStateException) {
+                    // if fail validate
+                    root?.unlock()
+                    rootMutex.unlock()
+                    remove(key)
+                    return
+                }
+            } else {
+                root?.unlock()
+                rootMutex.unlock()
                 remove(key)
+            }
 
         } else {
-            // if we found the node and its parent
+            // remove node in tree
+
             parentNode.lock()
             childNode.lock()
 
-            if (validate(childNode) && childNode.key == key) {
+            if (validate(parentNode) && (parentNode.right == childNode || parentNode.left == childNode) && childNode.key == key) {
 
+                // identify the child and remove it
                 try {
                     if (parentNode.key < key)
-                        parentNode.right?.also { parentNode.right = it.remove(it, key) }
+                        childNode.also { parentNode.right = it.remove(it, key) }
                     else
-                        parentNode.left?.also { parentNode.left = it.remove(it, key) }
-                } catch (e: IllegalArgumentException) {
-                    return remove(key)
+                        childNode.also { parentNode.left = it.remove(it, key) }
+                } catch (_: IllegalThreadStateException) {
+                    // if fail validate
+                    childNode.unlock()
+                    parentNode.unlock()
+                    remove(key)
+                    return
                 }
 
+                childNode.unlock()
                 parentNode.unlock()
             } else {
+                // if node was changed
                 childNode.unlock()
                 parentNode.unlock()
                 remove(key)

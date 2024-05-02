@@ -7,7 +7,7 @@ class OptimisticNode<K : Comparable<K>, V>(
     value: V,
     left: OptimisticNode<K, V>? = null,
     right: OptimisticNode<K, V>? = null,
-    private val validate: (OptimisticNode<K, V>) -> Boolean
+    private val validate: (OptimisticNode<K, V>?) -> Boolean
 ) : AbstractNode<K, V, OptimisticNode<K, V>>(key, value, left, right) {
     private val mutex = Mutex()
 
@@ -65,53 +65,72 @@ class OptimisticNode<K : Comparable<K>, V>(
         else left?.search(key)
     }
 
+    private suspend fun minSubstitution(node: OptimisticNode<K, V>): OptimisticNode<K, V> {
+        var parentNode: OptimisticNode<K, V> = node.right ?: throw NullPointerException()
+        var childNode: OptimisticNode<K, V>? = parentNode.left
+
+        // find min node and its parent
+        while (childNode?.left != null) {
+            parentNode = childNode
+
+            childNode.let { childNode = it.left ?: throw NullPointerException() }
+        }
+
+        parentNode.lock()
+        childNode?.lock()
+
+        if (childNode == null && validate(parentNode)) {
+            // (start node).right == min node
+
+            val res =
+                OptimisticNode(parentNode.key, parentNode.value, validate = { i -> validate(i) }) // copy parent node
+
+            if (parentNode.right != null)
+                node.right = parentNode.right // smart substitute
+            else
+                node.right = null // remove parent node
+
+            parentNode.unlock()
+            return res
+        } else if (parentNode.left == childNode && childNode != null && validate(childNode)) {
+            val res = OptimisticNode(childNode!!.key, childNode!!.value, validate = { i -> validate(i) })
+
+            if (childNode!!.right != null) {
+                // substitute
+                parentNode.left = childNode!!.right
+            } else {
+                parentNode.left = null
+            }
+
+            childNode!!.unlock()
+            parentNode.unlock()
+            return res
+        } else {
+            childNode?.unlock()
+            parentNode.unlock()
+            throw IllegalThreadStateException()
+        }
+    }
+
     override suspend fun remove(subTree: OptimisticNode<K, V>, key: K): OptimisticNode<K, V>? {
         return if (this.key == key) {
-            if (left == null && right == null) {
-                // Remove node without children
-                unlock()
+            if (left == null && right == null)
                 null
-            } else if (left == null) {
-                // Remove node with right child
-                unlock()
+            else if (left == null)
                 right
-            } else if (right == null) {
-                // Remove node with left child
-                unlock()
+            else if (right == null)
                 left
-            } else {
-                // find min node from right subtree
-                val minNode = right?.min() ?: throw NullPointerException()
-                // Remove nodes with both children
-                right?.lock()
-                // remove min node from tree
-                right = right?.remove(right ?: throw NullPointerException(), minNode.key)
+            else {
+                // find min node
+                val minNode = minSubstitution(this)
 
-                // change cur node key & value
                 this.key = minNode.key
                 this.value = minNode.value
-
-                unlock()
                 this
             }
-
         } else {
-            if (left == null && right == null) {
-                unlock()
-                throw IllegalArgumentException("Node with key $key doesn't exist.")
-            }
-
-            if (this.key < key) {
-                right?.lock()
-                unlock()
-                right = right?.remove(right ?: throw NullPointerException(), key)
-            } else {
-                left?.lock()
-                unlock()
-                left = left?.remove(left ?: throw NullPointerException(), key)
-            }
-
-            subTree
+            // we should remove only nodes where this.key == key
+            throw IllegalThreadStateException()
         }
     }
 
