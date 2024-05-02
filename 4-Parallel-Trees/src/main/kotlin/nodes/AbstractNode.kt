@@ -13,8 +13,10 @@ abstract class AbstractNode<K : Comparable<K>, V, N : AbstractNode<K, V, N>>(
     abstract suspend fun search(key: K): V?
     abstract suspend fun remove(subTree: N, key: K): N?
 
+    override fun toString(): String = "($key, $value)"
+
     @Suppress("UNCHECKED_CAST")
-    fun min(): N = this.left?.min() ?: (this as N)
+    open suspend fun min(): N = this.left?.min() ?: (this as N)
 
 
     fun buildString(sb: StringBuilder, padding: String = "", pointer: String = "") {
